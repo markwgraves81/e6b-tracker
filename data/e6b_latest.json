@@ -1,0 +1,24 @@
+{
+  "generated_utc": "2026-03-10 20:00:00",
+  "count": 1,
+  "positions": [
+    {
+      "hex": "AE0414",
+      "tail_number": "164387",
+      "callsign": "MERCURY",
+      "lat": 36.8401,
+      "lon": -119.792,
+      "altitude_ft": 4200,
+      "groundspeed_kt": 215,
+      "seen_utc": "2026-03-10 20:00:00",
+      "confidence": "High",
+      "area": "California",
+      "source": "adsb.fi public API",
+      "history": [
+        { "lat": 36.78, "lon": -119.91 },
+        { "lat": 36.81, "lon": -119.86 },
+        { "lat": 36.84, "lon": -119.79 }
+      ]
+    }
+  ]
+}
