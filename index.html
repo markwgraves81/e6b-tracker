@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>E-6B Mercury tracker</title>
+  <title>Tracking 16 E-6B “doomsday planes”</title>
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -115,7 +115,8 @@
         height: 360px;
       }
 
-      .note {
+      .note,
+      .small {
         font-size: 12px;
       }
     }
@@ -123,23 +124,23 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>E-6B Mercury tracker</h1>
+    <h1>Tracking 16 E-6B “doomsday planes”</h1>
     <p class="dek">
-      Recent publicly visible positions tied to the U.S. Navy’s Boeing E-6B Mercury fleet,
-      often referred to as a “doomsday plane.” Military aircraft do not always appear in
-      public flight data, so this map only shows detectable public signals.
+      This map checks for 16 U.S. Navy E-6B Mercury planes, often called “doomsday planes.”
+      It only shows planes that are visible in free public flight-tracking data.
     </p>
     <div class="meta" id="meta">Loading latest data…</div>
     <div id="map"></div>
     <div id="empty" class="empty" style="display:none;">
-      No current E-6B positions found in the latest public data pull.
+      No E-6B planes were visible in the public tracking data when this map last updated.
+      That does not mean none were flying.
     </div>
     <p class="note">
-      Source: Public ADS-B / aircraft-transponder data processed automatically. Positions may be delayed,
-      partial or absent. Manually added historical tracks may be approximate. Map refreshes every 60 seconds.
-      Credit: Mark Graves, The Oregonian/OregonLive
+      This map updates automatically using free public flight-tracking data. Military planes do not always
+      appear in public data, so a blank map does not mean the planes are grounded. Some older paths may be
+      based on verified sightings and can be approximate. Credit: Mark Graves, The Oregonian/OregonLive
     </p>
-    <p class="small">Known E-6B hex range tracked here: AE0410–AE041C</p>
+    <p class="small">This tracker is set up to check all 16 aircraft in the E-6B fleet.</p>
   </div>
 
   <script
