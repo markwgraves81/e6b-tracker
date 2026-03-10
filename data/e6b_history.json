@@ -1,5 +1,6 @@
 {
   "generated_utc": "2026-03-10 00:00:00",
   "count": 0,
-  "positions": []
+  "positions": [],
+  "error": "HTTP Error 400: Bad Request"
 }
