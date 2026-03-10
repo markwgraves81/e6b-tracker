@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import json
 import os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
 
@@ -26,8 +26,8 @@ E6B_HEX = {
 
 LATEST_OUTPUT_PATH = "data/e6b_latest.json"
 HISTORY_OUTPUT_PATH = "data/e6b_history.json"
+ALERTS_OUTPUT_PATH = "data/e6b_alerts.json"
 BASE_URL = "https://opendata.adsb.fi/api/v2/hex"
-HISTORY_DAYS = 7
 
 
 def fetch_json(url: str):
@@ -43,8 +43,6 @@ def fetch_aircraft_by_hex(hex_code: str):
     url = f"{BASE_URL}/{hex_code.upper()}"
     payload = fetch_json(url)
 
-    # adsb.fi says these endpoints are compatible with the ADSBexchange v2 API.
-    # Most often aircraft are returned in payload["ac"], but this fallback keeps us resilient.
     if isinstance(payload, dict):
         if isinstance(payload.get("ac"), list):
             return payload["ac"]
@@ -106,34 +104,32 @@ def normalize_aircraft(ac: dict, now_utc: str):
     }
 
 
-def load_existing_history():
-    if not os.path.exists(HISTORY_OUTPUT_PATH):
-        return {"generated_utc": None, "count": 0, "positions": []}
-
+def load_json_file(path: str, default_value):
+    if not os.path.exists(path):
+        return default_value
     try:
-        with open(HISTORY_OUTPUT_PATH, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, OSError):
-        return {"generated_utc": None, "count": 0, "positions": []}
+        return default_value
 
 
-def trim_history_points(points, cutoff_dt):
-    kept = []
-    for pt in points:
-        seen = pt.get("seen_utc")
-        if not seen:
-            continue
-        try:
-            pt_dt = datetime.strptime(seen, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
-        except ValueError:
-            continue
-        if pt_dt >= cutoff_dt:
-            kept.append(pt)
-    return kept
+def load_existing_history():
+    return load_json_file(HISTORY_OUTPUT_PATH, {
+        "generated_utc": None,
+        "count": 0,
+        "positions": []
+    })
+
+
+def load_existing_alerts():
+    return load_json_file(ALERTS_OUTPUT_PATH, {
+        "generated_utc": None,
+        "new_sightings": []
+    })
 
 
 def update_history(existing_history, latest_positions, now_dt):
-    cutoff_dt = now_dt - timedelta(days=HISTORY_DAYS)
     known_hex_upper = {h.upper() for h in E6B_HEX.keys()}
 
     history_map = {}
@@ -161,6 +157,8 @@ def update_history(existing_history, latest_positions, now_dt):
                 "history": []
             }
 
+    new_sightings = []
+
     for position in latest_positions:
         hex_code = position["hex"].upper()
         entry = history_map.get(hex_code, {
@@ -187,20 +185,36 @@ def update_history(existing_history, latest_positions, now_dt):
         }
 
         history = entry.setdefault("history", [])
-        if not history or (
+
+        is_new_sighting = len(history) == 0
+        is_new_point = (
+            not history or
             history[-1].get("lat") != new_point["lat"] or
             history[-1].get("lon") != new_point["lon"] or
             history[-1].get("seen_utc") != new_point["seen_utc"]
-        ):
+        )
+
+        if is_new_point:
             history.append(new_point)
+
+        if is_new_sighting and history:
+            new_sightings.append({
+                "hex": hex_code,
+                "tail_number": entry.get("tail_number", ""),
+                "callsign": entry.get("callsign", ""),
+                "lat": new_point["lat"],
+                "lon": new_point["lon"],
+                "seen_utc": new_point["seen_utc"],
+                "area": new_point.get("area", "Unknown"),
+                "source": entry.get("source", "adsb.fi public API")
+            })
 
         history_map[hex_code] = entry
 
     output_positions = []
 
     for entry in history_map.values():
-        entry["history"] = trim_history_points(entry.get("history", []), cutoff_dt)
-        if entry["history"]:
+        if entry.get("history"):
             latest_pt = entry["history"][-1]
             entry["lat"] = latest_pt.get("lat")
             entry["lon"] = latest_pt.get("lon")
@@ -211,8 +225,7 @@ def update_history(existing_history, latest_positions, now_dt):
         output_positions.append(entry)
 
     for entry in manual_entries:
-        entry["history"] = trim_history_points(entry.get("history", []), cutoff_dt)
-        if entry["history"]:
+        if entry.get("history"):
             latest_pt = entry["history"][-1]
             entry["lat"] = latest_pt.get("lat")
             entry["lon"] = latest_pt.get("lon")
@@ -220,13 +233,15 @@ def update_history(existing_history, latest_positions, now_dt):
             entry["altitude_ft"] = latest_pt.get("altitude_ft")
             entry["groundspeed_kt"] = latest_pt.get("groundspeed_kt")
             entry["area"] = latest_pt.get("area")
-            output_positions.append(entry)
+        output_positions.append(entry)
 
-    return {
+    history_output = {
         "generated_utc": now_dt.strftime("%Y-%m-%d %H:%M:%S"),
         "count": sum(1 for p in output_positions if p.get("history")),
         "positions": sorted(output_positions, key=lambda x: x.get("hex", ""))
     }
+
+    return history_output, new_sightings
 
 
 def main():
@@ -241,6 +256,7 @@ def main():
     }
 
     history_output = load_existing_history()
+    alerts_output = load_existing_alerts()
 
     try:
         positions_by_hex = {}
@@ -260,7 +276,13 @@ def main():
 
         latest_output["positions"] = positions
         latest_output["count"] = len(positions)
-        history_output = update_history(history_output, positions, now_dt)
+
+        history_output, new_sightings = update_history(history_output, positions, now_dt)
+
+        alerts_output = {
+            "generated_utc": now_utc,
+            "new_sightings": new_sightings
+        }
 
         latest_output.pop("error", None)
         history_output.pop("error", None)
@@ -272,12 +294,20 @@ def main():
     except Exception as exc:
         latest_output["error"] = str(exc)
         history_output["error"] = str(exc)
+        alerts_output = {
+            "generated_utc": now_utc,
+            "new_sightings": [],
+            "error": str(exc)
+        }
 
     with open(LATEST_OUTPUT_PATH, "w", encoding="utf-8") as f:
         json.dump(latest_output, f, indent=2)
 
     with open(HISTORY_OUTPUT_PATH, "w", encoding="utf-8") as f:
         json.dump(history_output, f, indent=2)
+
+    with open(ALERTS_OUTPUT_PATH, "w", encoding="utf-8") as f:
+        json.dump(alerts_output, f, indent=2)
 
 
 if __name__ == "__main__":
