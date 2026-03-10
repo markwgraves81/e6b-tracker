@@ -1,7 +1,111 @@
 {
-  "generated_utc": "2026-03-10 00:00:00",
+  "generated_utc": "2026-03-10 21:36:55",
   "count": 1,
   "positions": [
+    {
+      "hex": "AE0410",
+      "tail_number": "163918",
+      "callsign": "",
+      "confidence": "High",
+      "source": "adsb.fi public API",
+      "history": []
+    },
+    {
+      "hex": "AE0411",
+      "tail_number": "163919",
+      "callsign": "",
+      "confidence": "High",
+      "source": "adsb.fi public API",
+      "history": []
+    },
+    {
+      "hex": "AE0412",
+      "tail_number": "163920",
+      "callsign": "",
+      "confidence": "High",
+      "source": "adsb.fi public API",
+      "history": []
+    },
+    {
+      "hex": "AE0413",
+      "tail_number": "164386",
+      "callsign": "",
+      "confidence": "High",
+      "source": "adsb.fi public API",
+      "history": []
+    },
+    {
+      "hex": "AE0414",
+      "tail_number": "164387",
+      "callsign": "",
+      "confidence": "High",
+      "source": "adsb.fi public API",
+      "history": []
+    },
+    {
+      "hex": "AE0415",
+      "tail_number": "164388",
+      "callsign": "",
+      "confidence": "High",
+      "source": "adsb.fi public API",
+      "history": []
+    },
+    {
+      "hex": "AE0416",
+      "tail_number": "164404",
+      "callsign": "",
+      "confidence": "High",
+      "source": "adsb.fi public API",
+      "history": []
+    },
+    {
+      "hex": "AE0417",
+      "tail_number": "164405",
+      "callsign": "",
+      "confidence": "High",
+      "source": "adsb.fi public API",
+      "history": []
+    },
+    {
+      "hex": "AE0418",
+      "tail_number": "164406",
+      "callsign": "",
+      "confidence": "High",
+      "source": "adsb.fi public API",
+      "history": []
+    },
+    {
+      "hex": "AE0419",
+      "tail_number": "164407",
+      "callsign": "",
+      "confidence": "High",
+      "source": "adsb.fi public API",
+      "history": []
+    },
+    {
+      "hex": "AE041A",
+      "tail_number": "164408",
+      "callsign": "",
+      "confidence": "High",
+      "source": "adsb.fi public API",
+      "history": []
+    },
+    {
+      "hex": "AE041B",
+      "tail_number": "164409",
+      "callsign": "",
+      "confidence": "High",
+      "source": "adsb.fi public API",
+      "history": []
+    },
+    {
+      "hex": "AE041C",
+      "tail_number": "164410",
+      "callsign": "",
+      "confidence": "High",
+      "source": "adsb.fi public API",
+      "history": []
+    },
     {
       "hex": "MANUAL-FRESNO-20260308",
       "tail_number": "",
