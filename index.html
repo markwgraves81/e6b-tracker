@@ -181,7 +181,7 @@
     async function loadData() {
       try {
         const bust = `?t=${Date.now()}`;
-        const res = await fetch(`data/e6b_latest.json${bust}`, { cache: "no-store" });
+        const res = await fetch(`data/e6b_history.json${bust}`, { cache: "no-store" });
         const data = await res.json();
 
         markersLayer.clearLayers();
