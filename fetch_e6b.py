@@ -30,9 +30,7 @@ HISTORY_DAYS = 7
 def fetch_json(url: str):
     req = Request(
         url,
-        headers={
-            "User-Agent": "Mozilla/5.0 E6B-Tracker/1.0"
-        }
+        headers={"User-Agent": "Mozilla/5.0 E6B-Tracker/1.0"}
     )
     with urlopen(req, timeout=60) as resp:
         return json.loads(resp.read().decode("utf-8"))
@@ -115,12 +113,20 @@ def trim_history_points(points, cutoff_dt):
 
 def update_history(existing_history, latest_positions, now_dt):
     cutoff_dt = now_dt - timedelta(days=HISTORY_DAYS)
+    known_hex_upper = {h.upper() for h in E6B_HEX.keys()}
 
     history_map = {}
+    manual_entries = []
+
     for entry in existing_history.get("positions", []):
-        hex_code = entry.get("hex")
-        if hex_code:
+        hex_code = (entry.get("hex") or "").upper()
+        if not hex_code:
+            continue
+
+        if hex_code in known_hex_upper:
             history_map[hex_code] = entry
+        else:
+            manual_entries.append(entry)
 
     for hex_code, tail in E6B_HEX.items():
         hex_up = hex_code.upper()
@@ -135,7 +141,7 @@ def update_history(existing_history, latest_positions, now_dt):
             }
 
     for position in latest_positions:
-        hex_code = position["hex"]
+        hex_code = position["hex"].upper()
         entry = history_map.get(hex_code, {
             "hex": hex_code,
             "tail_number": position.get("tail_number", ""),
@@ -162,6 +168,7 @@ def update_history(existing_history, latest_positions, now_dt):
         history_map[hex_code] = entry
 
     output_positions = []
+
     for entry in history_map.values():
         entry["history"] = trim_history_points(entry.get("history", []), cutoff_dt)
         if entry["history"]:
@@ -173,6 +180,18 @@ def update_history(existing_history, latest_positions, now_dt):
             entry["groundspeed_kt"] = latest_pt.get("groundspeed_kt")
             entry["area"] = latest_pt.get("area")
         output_positions.append(entry)
+
+    for entry in manual_entries:
+        entry["history"] = trim_history_points(entry.get("history", []), cutoff_dt)
+        if entry["history"]:
+            latest_pt = entry["history"][-1]
+            entry["lat"] = latest_pt.get("lat")
+            entry["lon"] = latest_pt.get("lon")
+            entry["seen_utc"] = latest_pt.get("seen_utc")
+            entry["altitude_ft"] = latest_pt.get("altitude_ft")
+            entry["groundspeed_kt"] = latest_pt.get("groundspeed_kt")
+            entry["area"] = latest_pt.get("area")
+            output_positions.append(entry)
 
     return {
         "generated_utc": now_dt.strftime("%Y-%m-%d %H:%M:%S"),
@@ -207,6 +226,9 @@ def main():
         latest_output["positions"] = positions
         latest_output["count"] = len(positions)
         history_output = update_history(history_output, positions, now_dt)
+
+        latest_output.pop("error", None)
+        history_output.pop("error", None)
 
     except (URLError, HTTPError, TimeoutError, json.JSONDecodeError) as exc:
         latest_output["error"] = str(exc)
