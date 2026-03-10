@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>E-6B Mercury tracker</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #fff;
+      color: #111;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      line-height: 1.1;
+    }
+
+    .dek {
+      margin: 0 0 14px 0;
+      font-size: 16px;
+      line-height: 1.45;
+      color: #333;
+    }
+
+    .meta {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 12px;
+    }
+
+    #map {
+      width: 100%;
+      height: 680px;
+      border: 1px solid #ddd;
+    }
+
+    .legend,
+    .panel {
+      background: rgba(255,255,255,0.96);
+      padding: 10px 12px;
+      border-radius: 8px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.15);
+      line-height: 1.4;
+    }
+
+    .legend {
+      font-size: 13px;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    .note {
+      margin-top: 12px;
+      font-size: 13px;
+      line-height: 1.45;
+      color: #444;
+    }
+
+    .small {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .empty {
+      padding: 16px;
+      border: 1px solid #ddd;
+      background: #fafafa;
+      margin-top: 12px;
+      font-size: 15px;
+    }
+
+    @media (max-width: 700px) {
+      h1 {
+        font-size: 24px;
+      }
+
+      #map {
+        height: 520px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>E-6B Mercury tracker</h1>
+    <p class="dek">
+      Recent publicly visible positions tied to the U.S. Navy’s Boeing E-6B Mercury fleet,
+      often referred to as a “doomsday plane.” Military aircraft do not always appear in
+      public flight data, so this map only shows detectable public signals.
+    </p>
+    <div class="meta" id="meta">Loading latest data…</div>
+    <div id="map"></div>
+    <div id="empty" class="empty" style="display:none;">
+      No current E-6B positions found in the latest public data pull.
+    </div>
+    <p class="note">
+      Source: Public ADS-B / aircraft-transponder data processed automatically. Positions may be delayed,
+      partial or absent. Map refreshes every 60 seconds. Credit: Mark Graves, The Oregonian/OregonLive
+    </p>
+    <p class="small">Known E-6B hex range tracked here: AE0410–AE041C</p>
+  </div>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <script>
+    const map = L.map("map", {
+      zoomControl: true,
+      scrollWheelZoom: false
+    }).setView([39.5, -119.5], 5);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18,
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
+
+    const markersLayer = L.layerGroup().addTo(map);
+    const linesLayer = L.layerGroup().addTo(map);
+
+    const confidenceColor = {
+      high: "#c62828",
+      medium: "#ef6c00",
+      low: "#666666"
+    };
+
+    const legend = L.control({ position: "bottomleft" });
+    legend.onAdd = function () {
+      const div = L.DomUtil.create("div", "legend");
+      div.innerHTML = `
+        <div><span class="dot" style="background:#c62828"></span>High confidence</div>
+        <div><span class="dot" style="background:#ef6c00"></span>Medium confidence</div>
+        <div><span class="dot" style="background:#666"></span>Low confidence</div>
+      `;
+      return div;
+    };
+    legend.addTo(map);
+
+    function fmt(v, fallback = "—") {
+      return (v === null || v === undefined || v === "") ? fallback : v;
+    }
+
+    function popupHtml(p) {
+      return `
+        <strong>${fmt(p.callsign, "Unknown callsign")}</strong><br>
+        Hex: ${fmt(p.hex)}<br>
+        Tail: ${fmt(p.tail_number)}<br>
+        Altitude: ${fmt(p.altitude_ft)} ft<br>
+        Groundspeed: ${fmt(p.groundspeed_kt)} kt<br>
+        Confidence: ${fmt(p.confidence)}<br>
+        Time (UTC): ${fmt(p.seen_utc)}<br>
+        Area: ${fmt(p.area)}<br>
+        Source: ${fmt(p.source)}
+      `;
+    }
+
+    async function loadData() {
+      try {
+        const bust = `?t=${Date.now()}`;
+        const res = await fetch(`data/e6b_latest.json${bust}`, { cache: "no-store" });
+        const data = await res.json();
+
+        markersLayer.clearLayers();
+        linesLayer.clearLayers();
+
+        document.getElementById("meta").textContent =
+          `Latest update: ${data.generated_utc || "unknown"} UTC · ${data.count || 0} aircraft visible`;
+
+        const empty = document.getElementById("empty");
+
+        if (!data.positions || !data.positions.length) {
+          empty.style.display = "block";
+          return;
+        }
+
+        empty.style.display = "none";
+
+        const bounds = [];
+
+        data.positions.forEach((p) => {
+          if (typeof p.lat !== "number" || typeof p.lon !== "number") return;
+
+          const color = confidenceColor[(p.confidence || "low").toLowerCase()] || "#666";
+
+          const marker = L.circleMarker([p.lat, p.lon], {
+            radius: 8,
+            color,
+            weight: 2,
+            fillColor: color,
+            fillOpacity: 0.65
+          }).bindPopup(popupHtml(p));
+
+          marker.addTo(markersLayer);
+          bounds.push([p.lat, p.lon]);
+
+          if (Array.isArray(p.history) && p.history.length > 1) {
+            const coords = p.history
+              .filter(h => typeof h.lat === "number" && typeof h.lon === "number")
+              .map(h => [h.lat, h.lon]);
+
+            if (coords.length > 1) {
+              L.polyline(coords, {
+                color,
+                weight: 2,
+                opacity: 0.5,
+                dashArray: "4,5"
+              }).addTo(linesLayer);
+            }
+          }
+        });
+
+        if (bounds.length) {
+          map.fitBounds(bounds, { padding: [25, 25] });
+        }
+      } catch (err) {
+        document.getElementById("meta").textContent = "Could not load latest data.";
+        console.error(err);
+      }
+    }
+
+    loadData();
+    setInterval(loadData, 60000);
+  </script>
+</body>
+</html>
