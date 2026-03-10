@@ -3,7 +3,7 @@ name: Update and deploy E-6B tracker
 on:
   workflow_dispatch:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "0 */4 * * *"
 
 permissions:
   contents: write
@@ -26,11 +26,107 @@ jobs:
       - name: Fetch latest E-6B data
         run: python fetch_e6b.py
 
+      - name: Check for new sightings
+        id: alerts
+        run: |
+          python - <<'PY'
+          import json
+          import os
+
+          path = "data/e6b_alerts.json"
+          has_alerts = "false"
+          subject = ""
+          body = ""
+
+          try:
+              with open(path, "r", encoding="utf-8") as f:
+                  data = json.load(f)
+
+              sightings = data.get("new_sightings", [])
+              if sightings:
+                  has_alerts = "true"
+                  first = sightings[0]
+                  count = len(sightings)
+
+                  if count == 1:
+                      subject = f"E-6B spotted: {first.get('hex', 'Unknown')}"
+                  else:
+                      subject = f"{count} new E-6B sightings detected"
+
+                  lines = []
+                  lines.append("New E-6B sighting alert")
+                  lines.append("")
+                  lines.append(f"Generated UTC: {data.get('generated_utc', 'Unknown')}")
+                  lines.append(f"New sightings: {count}")
+                  lines.append("")
+
+                  for s in sightings:
+                      lines.append(
+                          f"- Hex: {s.get('hex', 'Unknown')} | "
+                          f"Tail: {s.get('tail_number', 'Unknown')} | "
+                          f"Callsign: {s.get('callsign', 'Unknown') or 'Unknown'} | "
+                          f"Area: {s.get('area', 'Unknown')} | "
+                          f"Time UTC: {s.get('seen_utc', 'Unknown')} | "
+                          f"Lat/Lon: {s.get('lat', 'Unknown')}, {s.get('lon', 'Unknown')}"
+                      )
+
+                  body = "\n".join(lines)
+
+          except Exception as exc:
+              has_alerts = "false"
+              subject = "E-6B alert check failed"
+              body = f"Could not read alert file: {exc}"
+
+          github_output = os.environ["GITHUB_OUTPUT"]
+          with open(github_output, "a", encoding="utf-8") as f:
+              f.write(f"has_alerts={has_alerts}\n")
+              f.write("subject<<EOF\n")
+              f.write(subject + "\n")
+              f.write("EOF\n")
+              f.write("body<<EOF\n")
+              f.write(body + "\n")
+              f.write("EOF\n")
+          PY
+
+      - name: Send alert email
+        if: steps.alerts.outputs.has_alerts == 'true'
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          ALERT_FROM: ${{ secrets.ALERT_FROM }}
+          ALERT_TO: ${{ secrets.ALERT_TO }}
+          ALERT_SUBJECT: ${{ steps.alerts.outputs.subject }}
+          ALERT_BODY: ${{ steps.alerts.outputs.body }}
+        run: |
+          python - <<'PY'
+          import os
+          import smtplib
+          from email.message import EmailMessage
+
+          msg = EmailMessage()
+          msg["Subject"] = os.environ["ALERT_SUBJECT"]
+          msg["From"] = os.environ["ALERT_FROM"]
+          msg["To"] = os.environ["ALERT_TO"]
+          msg.set_content(os.environ["ALERT_BODY"])
+
+          host = os.environ["SMTP_HOST"]
+          port = int(os.environ["SMTP_PORT"])
+          username = os.environ["SMTP_USERNAME"]
+          password = os.environ["SMTP_PASSWORD"]
+
+          with smtplib.SMTP(host, port) as server:
+              server.starttls()
+              server.login(username, password)
+              server.send_message(msg)
+          PY
+
       - name: Commit updated JSON if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/e6b_latest.json data/e6b_history.json
+          git add data/e6b_latest.json data/e6b_history.json data/e6b_alerts.json
           git diff --staged --quiet || git commit -m "Update E-6B tracker data"
           git pull --rebase origin main
           git push
