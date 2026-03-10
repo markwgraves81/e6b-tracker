@@ -23,7 +23,7 @@ E6B_HEX = {
 
 LATEST_OUTPUT_PATH = "data/e6b_latest.json"
 HISTORY_OUTPUT_PATH = "data/e6b_history.json"
-DATA_URL = "https://opendata.adsb.fi/api/v2/lat/39.5/lon/-98.35/dist/3000"
+DATA_URL = "https://opendata.adsb.fi/api/v3/lat/39.5/lon/-98.35/dist/250"
 HISTORY_DAYS = 7
 
 
