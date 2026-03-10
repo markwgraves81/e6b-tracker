@@ -26,7 +26,7 @@ E6B_HEX = {
 
 LATEST_OUTPUT_PATH = "data/e6b_latest.json"
 HISTORY_OUTPUT_PATH = "data/e6b_history.json"
-DATA_URL = "https://opendata.adsb.fi/api/v3/lat/39.5/lon/-98.35/dist/250"
+BASE_URL = "https://opendata.adsb.fi/api/v2/hex"
 HISTORY_DAYS = 7
 
 
@@ -37,6 +37,22 @@ def fetch_json(url: str):
     )
     with urlopen(req, timeout=60) as resp:
         return json.loads(resp.read().decode("utf-8"))
+
+
+def fetch_aircraft_by_hex(hex_code: str):
+    url = f"{BASE_URL}/{hex_code.upper()}"
+    payload = fetch_json(url)
+
+    # adsb.fi says these endpoints are compatible with the ADSBexchange v2 API.
+    # Most often aircraft are returned in payload["ac"], but this fallback keeps us resilient.
+    if isinstance(payload, dict):
+        if isinstance(payload.get("ac"), list):
+            return payload["ac"]
+        if isinstance(payload.get("aircraft"), list):
+            return payload["aircraft"]
+    if isinstance(payload, list):
+        return payload
+    return []
 
 
 def infer_confidence(ac: dict) -> str:
@@ -57,6 +73,8 @@ def area_label(lat, lon):
         return "California"
     if 41.5 <= lat <= 46.5 and -125 <= lon <= -116:
         return "Oregon"
+    if 30 <= lat <= 49.5 and -125 <= lon <= -66:
+        return "Continental U.S."
     return "Other"
 
 
@@ -159,14 +177,22 @@ def update_history(existing_history, latest_positions, now_dt):
         entry["confidence"] = position.get("confidence", entry.get("confidence", "High"))
         entry["source"] = position.get("source", entry.get("source", "adsb.fi public API"))
 
-        entry.setdefault("history", []).append({
+        new_point = {
             "lat": position["lat"],
             "lon": position["lon"],
             "seen_utc": position["seen_utc"],
             "altitude_ft": position.get("altitude_ft"),
             "groundspeed_kt": position.get("groundspeed_kt"),
             "area": position.get("area")
-        })
+        }
+
+        history = entry.setdefault("history", [])
+        if not history or (
+            history[-1].get("lat") != new_point["lat"] or
+            history[-1].get("lon") != new_point["lon"] or
+            history[-1].get("seen_utc") != new_point["seen_utc"]
+        ):
+            history.append(new_point)
 
         history_map[hex_code] = entry
 
@@ -217,14 +243,20 @@ def main():
     history_output = load_existing_history()
 
     try:
-        payload = fetch_json(DATA_URL)
-        aircraft = payload.get("ac", [])
-        positions = []
+        positions_by_hex = {}
+        fetch_errors = []
 
-        for ac in aircraft:
-            norm = normalize_aircraft(ac, now_utc)
-            if norm:
-                positions.append(norm)
+        for hex_code in E6B_HEX.keys():
+            try:
+                aircraft_list = fetch_aircraft_by_hex(hex_code)
+                for ac in aircraft_list:
+                    norm = normalize_aircraft(ac, now_utc)
+                    if norm:
+                        positions_by_hex[norm["hex"]] = norm
+            except (URLError, HTTPError, TimeoutError, json.JSONDecodeError) as exc:
+                fetch_errors.append(f"{hex_code.upper()}: {exc}")
+
+        positions = list(positions_by_hex.values())
 
         latest_output["positions"] = positions
         latest_output["count"] = len(positions)
@@ -233,7 +265,11 @@ def main():
         latest_output.pop("error", None)
         history_output.pop("error", None)
 
-    except (URLError, HTTPError, TimeoutError, json.JSONDecodeError) as exc:
+        if fetch_errors:
+            latest_output["partial_errors"] = fetch_errors
+            history_output["partial_errors"] = fetch_errors
+
+    except Exception as exc:
         latest_output["error"] = str(exc)
         history_output["error"] = str(exc)
 
