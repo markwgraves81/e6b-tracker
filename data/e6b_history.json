@@ -1,6 +1,6 @@
 {
-  "generated_utc": "2026-03-10 23:04:45",
-  "count": 0,
+  "generated_utc": "2026-03-10 22:54:17",
+  "count": 1,
   "positions": [
     {
       "hex": "AE040D",
@@ -129,17 +129,129 @@
       "confidence": "High",
       "source": "adsb.fi public API",
       "history": []
+    },
+    {
+      "hex": "MANUAL-FRESNO-20260308",
+      "tail_number": "",
+      "callsign": "E-6B Mercury",
+      "confidence": "Medium",
+      "source": "Manual entry from published reporting",
+      "lat": 36.74,
+      "lon": -119.8,
+      "seen_utc": "2026-03-08 19:50:00",
+      "altitude_ft": 7360,
+      "groundspeed_kt": 233,
+      "area": "California",
+      "history": [
+        {
+          "lat": 36.92,
+          "lon": -119.93,
+          "seen_utc": "2026-03-08 18:00:00",
+          "altitude_ft": 7600,
+          "groundspeed_kt": 230,
+          "area": "California"
+        },
+        {
+          "lat": 36.89,
+          "lon": -119.82,
+          "seen_utc": "2026-03-08 18:10:00",
+          "altitude_ft": 7500,
+          "groundspeed_kt": 235,
+          "area": "California"
+        },
+        {
+          "lat": 36.82,
+          "lon": -119.7,
+          "seen_utc": "2026-03-08 18:20:00",
+          "altitude_ft": 7400,
+          "groundspeed_kt": 237,
+          "area": "California"
+        },
+        {
+          "lat": 36.76,
+          "lon": -119.64,
+          "seen_utc": "2026-03-08 18:30:00",
+          "altitude_ft": 7300,
+          "groundspeed_kt": 236,
+          "area": "California"
+        },
+        {
+          "lat": 36.7,
+          "lon": -119.7,
+          "seen_utc": "2026-03-08 18:40:00",
+          "altitude_ft": 7200,
+          "groundspeed_kt": 233,
+          "area": "California"
+        },
+        {
+          "lat": 36.72,
+          "lon": -119.82,
+          "seen_utc": "2026-03-08 18:50:00",
+          "altitude_ft": 7250,
+          "groundspeed_kt": 232,
+          "area": "California"
+        },
+        {
+          "lat": 36.79,
+          "lon": -119.88,
+          "seen_utc": "2026-03-08 19:00:00",
+          "altitude_ft": 7350,
+          "groundspeed_kt": 234,
+          "area": "California"
+        },
+        {
+          "lat": 36.86,
+          "lon": -119.86,
+          "seen_utc": "2026-03-08 19:10:00",
+          "altitude_ft": 7450,
+          "groundspeed_kt": 237,
+          "area": "California"
+        },
+        {
+          "lat": 36.9,
+          "lon": -119.76,
+          "seen_utc": "2026-03-08 19:20:00",
+          "altitude_ft": 7480,
+          "groundspeed_kt": 236,
+          "area": "California"
+        },
+        {
+          "lat": 36.84,
+          "lon": -119.69,
+          "seen_utc": "2026-03-08 19:30:00",
+          "altitude_ft": 7420,
+          "groundspeed_kt": 235,
+          "area": "California"
+        },
+        {
+          "lat": 36.77,
+          "lon": -119.72,
+          "seen_utc": "2026-03-08 19:40:00",
+          "altitude_ft": 7380,
+          "groundspeed_kt": 234,
+          "area": "California"
+        },
+        {
+          "lat": 36.74,
+          "lon": -119.8,
+          "seen_utc": "2026-03-08 19:50:00",
+          "altitude_ft": 7360,
+          "groundspeed_kt": 233,
+          "area": "California"
+        }
+      ]
     }
   ],
   "partial_errors": [
     "AE040E: HTTP Error 429: Too Many Requests",
     "AE040F: HTTP Error 429: Too Many Requests",
-    "AE0411: HTTP Error 429: Too Many Requests",
+    "AE0410: HTTP Error 429: Too Many Requests",
+    "AE0412: HTTP Error 429: Too Many Requests",
     "AE0413: HTTP Error 429: Too Many Requests",
-    "AE0414: HTTP Error 429: Too Many Requests",
+    "AE0415: HTTP Error 429: Too Many Requests",
     "AE0416: HTTP Error 429: Too Many Requests",
     "AE0417: HTTP Error 429: Too Many Requests",
-    "AE0418: HTTP Error 429: Too Many Requests",
+    "AE0419: HTTP Error 429: Too Many Requests",
     "AE041A: HTTP Error 429: Too Many Requests",
     "AE041B: HTTP Error 429: Too Many Requests",
     "AE041C: HTTP Error 429: Too Many Requests"
