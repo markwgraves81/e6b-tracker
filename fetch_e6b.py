@@ -6,6 +6,9 @@ from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
 
 E6B_HEX = {
+    "ae040d": "162782",
+    "ae040e": "162783",
+    "ae040f": "162784",
     "ae0410": "163918",
     "ae0411": "163919",
     "ae0412": "163920",
