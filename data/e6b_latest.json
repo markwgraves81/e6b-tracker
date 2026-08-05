@@ -1,8 +1,14 @@
 {
-  "generated_utc": "2026-08-04 20:58:05",
+  "generated_utc": "2026-08-05 01:12:10",
   "count": 0,
   "positions": [],
   "partial_errors": [
-    "AE0411: HTTP Error 429: Too Many Requests"
+    "AE040F: HTTP Error 429: Too Many Requests",
+    "AE0410: HTTP Error 429: Too Many Requests",
+    "AE0411: HTTP Error 429: Too Many Requests",
+    "AE0413: HTTP Error 429: Too Many Requests",
+    "AE0415: HTTP Error 429: Too Many Requests",
+    "AE0419: HTTP Error 429: Too Many Requests",
+    "AE041B: HTTP Error 429: Too Many Requests"
   ]
 }
