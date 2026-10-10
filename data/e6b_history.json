@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-10-10 16:24:27",
+  "generated_utc": "2026-10-10 22:58:50",
   "count": 1,
   "positions": [
     {
@@ -249,7 +249,6 @@
     "AE0414: HTTP Error 429: Too Many Requests",
     "AE0416: HTTP Error 429: Too Many Requests",
     "AE0418: HTTP Error 429: Too Many Requests",
-    "AE041A: HTTP Error 429: Too Many Requests",
-    "AE041C: HTTP Error 429: Too Many Requests"
+    "AE041A: HTTP Error 429: Too Many Requests"
   ]
 }
